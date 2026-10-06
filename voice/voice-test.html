@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PrepMate Voice Test</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .question {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 14px 22px;
+            margin: 8px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #speakBtn {
+            background: #2563eb;
+            color: white;
+        }
+
+        #listenBtn {
+            background: #16a34a;
+            color: white;
+        }
+
+        #answer {
+            margin-top: 25px;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 12px;
+            min-height: 50px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>PrepMate Voice Test 🎙️</h1>
+
+        <div class="question" id="question">
+            What is the difference between a while loop and a do-while loop?
+        </div>
+
+        <button id="speakBtn" onclick="speakQuestion()">
+            🔊 Speak Question
+        </button>
+
+        <button id="listenBtn" onclick="listenToAnswer()">
+            🎙️ Answer Using Voice
+        </button>
+
+        <div id="answer">
+            Your answer will appear here...
+        </div>
+
+    </div>
+
+    <script>
+
+        // Speak AI question
+        function speakQuestion() {
+
+            const question =
+                document.getElementById("question").innerText;
+
+            const speech =
+                new SpeechSynthesisUtterance(question);
+
+            speech.lang = "en-US";
+            speech.rate = 1;
+            speech.pitch = 1;
+
+            window.speechSynthesis.speak(speech);
+        }
+
+
+        // Listen to student's answer
+        function listenToAnswer() {
+
+            const SpeechRecognition =
+                window.SpeechRecognition ||
+                window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+
+                document.getElementById("answer").innerText =
+                    "Speech recognition is not supported in this browser.";
+
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+
+            recognition.lang = "en-US";
+            recognition.interimResults = false;
+            recognition.continuous = false;
+
+            document.getElementById("answer").innerText =
+                "Listening... 🎙️";
+
+            recognition.start();
+
+
+            recognition.onresult = function(event) {
+
+                const answer =
+                    event.results[0][0].transcript;
+
+                document.getElementById("answer").innerText =
+                    "Your Answer: " + answer;
+
+                console.log("Student Answer:", answer);
+            };
+
+
+            recognition.onerror = function(event) {
+
+                document.getElementById("answer").innerText =
+                    "Voice Error: " + event.error;
+
+                console.log("Voice Error:", event.error);
+            };
+
+
+            recognition.onend = function() {
+
+                console.log("Voice recognition ended.");
+
+            };
+        }
+
+    </script>
+
+</body>
+</html>
