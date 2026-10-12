@@ -4,23 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PrepMate - Voice Practice</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            padding: 30px 15px;
+            padding: 20px;
             background: #f0f4ff;
         }
+
         .box {
             max-width: 450px;
-            margin: 40px auto;
+            margin: 30px auto;
             padding: 25px;
             background: white;
             border-radius: 16px;
             box-shadow: 0 4px 15px #0001;
         }
+
         button {
-            padding: 13px 22px;
+            padding: 12px 20px;
             margin: 8px;
             border: none;
             border-radius: 8px;
@@ -28,41 +31,200 @@
             color: white;
             font-size: 16px;
         }
+
+        button:disabled {
+            background: #999;
+        }
+
         #result {
             margin-top: 20px;
-            white-space: pre-line;
             text-align: left;
+            white-space: pre-line;
         }
     </style>
 </head>
+
 <body>
-    <div class="box">
-        <h1>PrepMate 🎓</h1>
-        <p>AI Voice Preparation</p>
+<div class="box">
+    <h1>PrepMate 🎓</h1>
+    <p>AI Voice Preparation</p>
 
-        <h3 id="question">
-            What is the difference between a while loop and a do-while loop?
-        </h3>
+    <p id="progress">Question 1 of 5</p>
 
-        <button onclick="speakQuestion(questionText)">
-            🔊 Speak Question
-        </button>
+    <h3 id="question"></h3>
 
-        <button onclick="listenToAnswer(questionText)">
-            🎤 Answer Now
-        </button>
+    <button id="speakBtn" onclick="speakCurrentQuestion()">
+        🔊 Speak Question
+    </button>
 
-        <div id="result">Your analysis will appear here.</div>
-    </div>
+    <button id="answerBtn" onclick="listenToCurrentAnswer()">
+        🎤 Answer Now
+    </button>
 
-    <script src="voice.js"></script>
+    <button id="nextBtn" onclick="nextQuestion()" hidden>
+        Next Question ➡️
+    </button>
 
-    <script>
-        const questionText =
-            "What is the difference between a while loop and a do-while loop?";
+    <div id="result">Your answer and analysis will appear here.</div>
+</div>
 
-        // Override the result display for this page
-        const originalLog = console.log;
-    </script>
+<script>
+const questions = [
+    "What is the difference between a while loop and a do-while loop?",
+    "What is a variable in C programming?",
+    "What is the purpose of an if-else statement?",
+    "What is an array in C?",
+    "What is the difference between a compiler and an interpreter?"
+];
+
+const BACKEND_URL = "https://prepmate-r7bk.onrender.com";
+
+let currentQuestion = 0;
+let recognition = null;
+let waitingForResult = false;
+
+const questionElement = document.getElementById("question");
+const resultElement = document.getElementById("result");
+const progressElement = document.getElementById("progress");
+const answerButton = document.getElementById("answerBtn");
+const nextButton = document.getElementById("nextBtn");
+const speakButton = document.getElementById("speakBtn");
+
+function showQuestion() {
+    questionElement.textContent = questions[currentQuestion];
+    progressElement.textContent =
+        `Question ${currentQuestion + 1} of ${questions.length}`;
+
+    resultElement.textContent = "Speak your answer when you're ready.";
+    nextButton.hidden = true;
+    answerButton.disabled = false;
+    speakButton.disabled = false;
+}
+
+function speakCurrentQuestion() {
+    speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(
+        questions[currentQuestion]
+    );
+
+    speech.lang = "en-US";
+    speech.rate = 0.9;
+
+    speechSynthesis.speak(speech);
+}
+
+function listenToCurrentAnswer() {
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        resultElement.textContent =
+            "Speech recognition is not supported. Try Google Chrome.";
+        return;
+    }
+
+    if (waitingForResult) return;
+
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    waitingForResult = true;
+    answerButton.disabled = true;
+    nextButton.hidden = true;
+    resultElement.textContent = "Listening... Speak your answer now.";
+
+    recognition.onresult = async function(event) {
+        const answer = event.results[0][0].transcript;
+
+        resultElement.textContent =
+            "Your Answer: " + answer + "\n\nAnalyzing your answer...";
+
+        try {
+            const response = await fetch(
+                BACKEND_URL + "/analyze-answer",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        question: questions[currentQuestion],
+                        answer: answer
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Analysis request failed");
+            }
+
+            const data = await response.json();
+
+            resultElement.textContent =
+                "Your Answer: " + answer +
+                "\n\nScore: " + (data.score ?? "N/A") +
+                "\nCorrectness: " + (data.correctness ?? "Not evaluated") +
+                "\nRelevance: " + (data.relevance ?? "Not evaluated") +
+                "\nClarity: " + (data.clarity ?? "Not evaluated") +
+                "\n\nSuggestions: " +
+                (data.suggestions ?? "No suggestions available.");
+
+            nextButton.hidden = false;
+
+        } catch (error) {
+            resultElement.textContent =
+                "Your Answer: " + answer +
+                "\n\nCould not analyze the answer. Please try again.";
+
+            nextButton.hidden = false;
+        } finally {
+            waitingForResult = false;
+            answerButton.disabled = false;
+        }
+    };
+
+    recognition.onerror = function(event) {
+        resultElement.textContent =
+            "Voice error: " + event.error +
+            ". Please try answering again.";
+
+        waitingForResult = false;
+        answerButton.disabled = false;
+    };
+
+    recognition.onend = function() {
+        waitingForResult = false;
+        answerButton.disabled = false;
+    };
+
+    try {
+        recognition.start();
+    } catch (error) {
+        waitingForResult = false;
+        answerButton.disabled = false;
+        resultElement.textContent = "Could not start the microphone. Try again.";
+    }
+}
+
+function nextQuestion() {
+    if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        showQuestion();
+    } else {
+        questionElement.textContent = "Practice Completed! 🎉";
+        progressElement.textContent = "5 of 5 questions completed";
+        resultElement.textContent =
+            "Great job! You have completed this practice session.";
+        answerButton.hidden = true;
+        speakButton.hidden = true;
+        nextButton.hidden = true;
+    }
+}
+
+showQuestion();
+</script>
 </body>
 </html>
