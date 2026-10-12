@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepMate - Voice Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px 15px;
+            background: #f0f4ff;
+        }
+        .box {
+            max-width: 450px;
+            margin: 40px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px #0001;
+        }
+        button {
+            padding: 13px 22px;
+            margin: 8px;
+            border: none;
+            border-radius: 8px;
+            background: #2457d6;
+            color: white;
+            font-size: 16px;
+        }
+        #result {
+            margin-top: 20px;
+            white-space: pre-line;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>PrepMate 🎓</h1>
+        <p>AI Voice Preparation</p>
+
+        <h3 id="question">
+            What is the difference between a while loop and a do-while loop?
+        </h3>
+
+        <button onclick="speakQuestion(questionText)">
+            🔊 Speak Question
+        </button>
+
+        <button onclick="listenToAnswer(questionText)">
+            🎤 Answer Now
+        </button>
+
+        <div id="result">Your analysis will appear here.</div>
+    </div>
+
+    <script src="voice.js"></script>
+
+    <script>
+        const questionText =
+            "What is the difference between a while loop and a do-while loop?";
+
+        // Override the result display for this page
+        const originalLog = console.log;
+    </script>
+</body>
+</html>
